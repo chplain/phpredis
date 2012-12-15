@@ -227,6 +227,13 @@ static zend_function_entry redis_functions[] = {
      PHP_ME(Redis, _prefix, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, _unserialize, NULL, ZEND_ACC_PUBLIC)
 
+     /* leveldb */
+     PHP_ME(Redis, dsGet, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, dsMGet, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, dsSet, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, dsMSet, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, dsDel, NULL, ZEND_ACC_PUBLIC)
+
 
      /* options */
      PHP_ME(Redis, getOption, NULL, ZEND_ACC_PUBLIC)
@@ -6244,3 +6251,101 @@ PHP_METHOD(Redis, time) {
 
 /* vim: set tabstop=4 softtabstop=4 noexpandtab shiftwidth=4: */
 
+PHP_METHOD(Redis, dsGet)
+{
+    zval *object;
+    RedisSock *redis_sock;
+    char *key = NULL, *cmd;
+    int key_len, cmd_len;
+    int key_free;
+
+    if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Os",
+                                     &object, redis_ce,
+                                     &key, &key_len) == FAILURE) {
+        RETURN_FALSE;
+    }
+
+    if (redis_sock_get(object, &redis_sock TSRMLS_CC, 0) < 0) {
+        RETURN_FALSE;
+    }
+
+    key_free = redis_key_prefix(redis_sock, &key, &key_len TSRMLS_CC);
+    cmd_len = redis_cmd_format_static(&cmd, "DS_GET", "s", key, key_len);
+    if(key_free) efree(key);
+
+    REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
+    IF_ATOMIC() {
+      redis_string_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, NULL);
+    }
+    REDIS_PROCESS_RESPONSE(redis_string_response);
+
+}
+
+PHP_METHOD(Redis, dsSet)
+{
+    zval *object;
+    RedisSock *redis_sock;
+    char *key = NULL, *val = NULL, *cmd;
+    int key_len, val_len, cmd_len;
+    long expire = -1;
+    int val_free = 0, key_free = 0;
+    zval *z_value;
+
+    if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Osz|l",
+                                     &object, redis_ce, &key, &key_len,
+                                     &z_value, &expire) == FAILURE) {
+        RETURN_FALSE;
+    }
+
+    if (redis_sock_get(object, &redis_sock TSRMLS_CC, 0) < 0) {
+        RETURN_FALSE;
+    }
+
+    val_free = redis_serialize(redis_sock, z_value, &val, &val_len TSRMLS_CC);
+    key_free = redis_key_prefix(redis_sock, &key, &key_len TSRMLS_CC);
+    cmd_len = redis_cmd_format_static(&cmd, "DS_SET", "ss", key, key_len, val, val_len);
+    if(val_free) efree(val);
+    if(key_free) efree(key);
+
+    REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
+    IF_ATOMIC() {
+        redis_boolean_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, NULL);
+    }
+    REDIS_PROCESS_RESPONSE(redis_boolean_response);
+}
+
+PHP_METHOD(Redis, dsDel)
+{
+    RedisSock *redis_sock;
+
+    if(FAILURE == generic_multiple_args_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU,
+                    "DS_DEL", sizeof("DS_DEL") - 1,
+                    1, &redis_sock, 0, 1, 1))
+        return;
+
+    IF_ATOMIC() {
+      redis_boolean_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, NULL);
+    }
+    REDIS_PROCESS_RESPONSE(redis_boolean_response);
+
+}
+
+PHP_METHOD(Redis, dsMGet)
+{
+    RedisSock *redis_sock;
+
+    if(FAILURE == generic_multiple_args_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU,
+                    "DS_MGET", sizeof("DS_MGET") - 1,
+                    1, &redis_sock, 0, 1, 1))
+        return;
+
+    IF_ATOMIC() {
+      redis_string_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, NULL);
+    }
+    REDIS_PROCESS_RESPONSE(redis_string_response);
+
+}
+
+PHP_METHOD(Redis, dsMSet) {
+    generic_mset(INTERNAL_FUNCTION_PARAM_PASSTHRU, "DS_MSET", redis_boolean_response);
+}

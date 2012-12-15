@@ -181,6 +181,13 @@ PHP_METHOD(Redis, setOption);
 
 PHP_METHOD(Redis, config);
 
+PHP_METHOD(Redis, dsGet);
+PHP_METHOD(Redis, dsMGet);
+PHP_METHOD(Redis, dsSet);
+PHP_METHOD(Redis, dsMSet);
+PHP_METHOD(Redis, dsDel);
+
+
 #ifdef PHP_WIN32
 #define PHP_REDIS_API __declspec(dllexport)
 #else
