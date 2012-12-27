@@ -1,11 +1,14 @@
 增强版扩展是针对 redis-straoge 做的
 
 redis-stroage
+==================
 
-	简价：给redis配上leveldb持久引擎，麻麻再也不用担心我的内存了。
-	地址：https://github.com/qiye/redis-storage 
+简价：给redis配上leveldb持久引擎，麻麻再也不用担心我的内存了。
+
+地址：[https://github.com/qiye/redis-storage](https://github.com/qiye/redis-storage)
 
 新增命令：
+==============
 
 	$redis->dsGet($key): 从leveldb取出数据
 	$redis->dsMGet(array $keys) : 批量从leveldb取出数据,注：反回的是一个string：key1=val1&key2=val2, 需要用 parse_str 获取数组
