@@ -1,3 +1,18 @@
+增强版扩展是针对 redis-straoge 做的
+
+redis-stroage
+
+	简价：给redis配上leveldb持久引擎，麻麻再也不用担心我的内存了。
+	地址：https://github.com/qiye/redis-storage 
+
+新增命令：
+
+	$redis->dsGet($key): 从leveldb取出数据
+	$redis->dsMGet(array $keys) : 批量从leveldb取出数据,注：反回的是一个string：key1=val1&key2=val2, 需要用 parse_str 获取数组
+	$redis->dsSet($key, $value): 把数据存到leveldb
+	$redis->dsMSet(array $keys) :批量把数据存到leveldb; keys结构 array("key1"=>"val1", "key2"=>"val2")
+	$redis->dsDel($key):  从leveldb删除数据， $key可以是字符串，也可是key的数组集合（相当于批量删除）
+	
 PhpRedis
 =============
 The phpredis extension provides an API for communicating with the [Redis](http://redis.io/) key-value store. It is released under the [PHP License, version 3.01](http://www.php.net/license/3_01.txt).
