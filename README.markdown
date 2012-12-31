@@ -7,7 +7,7 @@ redis-stroage
 
 地址：[https://github.com/qiye/redis-storage](https://github.com/qiye/redis-storage)
 
-新增命令：
+新增命令：(2012-12-31再新增三个命令)
 ==============
 
 	$redis->dsGet($key): 从leveldb取出数据
@@ -15,6 +15,9 @@ redis-stroage
 	$redis->dsSet($key, $value): 把数据存到leveldb
 	$redis->dsMSet(array $keys) :批量把数据存到leveldb; keys结构 array("key1"=>"val1", "key2"=>"val2")
 	$redis->dsDel($key):  从leveldb删除数据， $key可以是字符串，也可是key的数组集合（相当于批量删除）
+	$redis->rlGet($key):  先尝试从redis取数据，再尝试从leveldb取数据
+	$redis->rlSet($key, $value): 先把数据存到leveldb，再把数据存到redis
+	$redis->rlDel($key):  先从leveldb删除数据，再从redis删除数据
 	
 PhpRedis
 =============
