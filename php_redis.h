@@ -186,6 +186,9 @@ PHP_METHOD(Redis, dsMGet);
 PHP_METHOD(Redis, dsSet);
 PHP_METHOD(Redis, dsMSet);
 PHP_METHOD(Redis, dsDel);
+PHP_METHOD(Redis, rlGet);
+PHP_METHOD(Redis, rlSet);
+PHP_METHOD(Redis, rlDel);
 
 
 #ifdef PHP_WIN32
