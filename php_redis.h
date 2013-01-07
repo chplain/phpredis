@@ -189,6 +189,19 @@ PHP_METHOD(Redis, dsDel);
 PHP_METHOD(Redis, rlGet);
 PHP_METHOD(Redis, rlSet);
 PHP_METHOD(Redis, rlDel);
+PHP_METHOD(Redis, dsAppend);
+PHP_METHOD(Redis, dsIncrby);
+PHP_METHOD(Redis, dsHGet);
+PHP_METHOD(Redis, dsHSet);
+PHP_METHOD(Redis, dsHDel);
+PHP_METHOD(Redis, dsHMGet);
+PHP_METHOD(Redis, dsHMSet);
+PHP_METHOD(Redis, dsHIncrby);
+PHP_METHOD(Redis, dsHGetAll);
+PHP_METHOD(Redis, rlHGet);
+PHP_METHOD(Redis, rlHSet);
+PHP_METHOD(Redis, rlHDel);
+
 
 
 #ifdef PHP_WIN32
