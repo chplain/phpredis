@@ -242,7 +242,7 @@ static zend_function_entry redis_functions[] = {
      PHP_ME(Redis, dsHSet, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, dsHDel, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, dsHMget, NULL, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, dsHMget, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, dsHMset, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, dsHIncrBy, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, dsHGetAll, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, rlHGet, NULL, ZEND_ACC_PUBLIC)
