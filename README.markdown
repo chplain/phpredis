@@ -5,7 +5,11 @@ redis-stroage
 
 简价：给redis配上leveldb持久引擎，麻麻再也不用担心我的内存了。
 
-地址：[https://github.com/qiye/redis-storage](https://github.com/qiye/redis-storage)
+地址：[https://github.com/shenzhe/redis-storage](https://github.com/shenzhe/redis-storage)
+
+注意
+==================
+此扩展与:https://github.com/shenzhe/redis-storage  保持一致
 
 新增命令：
 ==============
