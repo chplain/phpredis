@@ -15,6 +15,7 @@ redis-stroage
 ==============
 
 	$redis->dsGet($key): 从leveldb取出数据
+	$redis->dsExists($key); key是否存在
 	$redis->dsMGet(array $keys) : 批量从leveldb取出数据,注：反回的是一个string：key1=val1&key2=val2, 需要用 parse_str 获取数组
 	$redis->dsSet($key, $value): 把数据存到leveldb
 	$redis->dsMSet(array $keys) :批量把数据存到leveldb; keys结构 array("key1"=>"val1", "key2"=>"val2")
@@ -25,6 +26,7 @@ redis-stroage
 	$redis->dsAppend($key, $appendVal); 追加数据 
 	$redis->dsIncrBy($key, $step);  //按$step步长自增
 	$redis->dsHSet($key, $hashKey, $val);
+	$redis->dsHExists($key, $hashKey); key是否存在hashKey
 	$redis->dsHGet($key, $hashKey,);
 	$redis->dsHDel($key, $hashKey);
 	$redis->dsHMget($key, array $hashKeys);
