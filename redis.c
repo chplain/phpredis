@@ -6720,7 +6720,7 @@ PHP_METHOD(Redis, dsHMset)
 
     key_free = redis_key_prefix(redis_sock, &key, &key_len TSRMLS_CC);
     cmd_len = redis_cmd_format(&cmd, 
-                    "$5" _NL "DS_HMSET" _NL
+                    "$8" _NL "DS_HMSET" _NL
                     "$%d" _NL "%s" _NL
                     , key_len, key, key_len);
     if(key_free) efree(key);
