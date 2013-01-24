@@ -6643,7 +6643,7 @@ PHP_METHOD(Redis, dsHMget) {
 
     cmd_len = redis_cmd_format(&cmd,
                     "*%d" _NL
-                    "$5" _NL
+                    "$8" _NL
                     "DS_HMGET" _NL
 
                     "$%d" _NL   /* key */
