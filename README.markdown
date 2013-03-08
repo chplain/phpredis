@@ -36,6 +36,9 @@ redis-stroage
 	$redis->rlHSet($key, $hashKey, $val); //同时设置到redis和leveldb
 	$redis->rlHGet($key, $hashKey,);      //先从redis取，再从leveldb取
 	$redis->rlHDel($key, $hashKey);       /同时删除redis和leveldb中的数据
+	$redis->dsHlen($key)		 	
+	$redis->dsHvals($key);			//返回key所有的hashkey值 
+	$redis->dsHsetnx($key, $hashKey, $val); //设置值，当hashKey存在，会失败抛异常 
 	
 
 phpredis 详细wiki
