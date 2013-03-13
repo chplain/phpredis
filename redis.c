@@ -236,6 +236,7 @@ static zend_function_entry redis_functions[] = {
      PHP_ME(Redis, rlGet, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, rlSet, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, rlDel, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, rlMSet, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, dsAppend, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, dsIncrBy, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, dsHGet, NULL, ZEND_ACC_PUBLIC)
@@ -6466,6 +6467,10 @@ PHP_METHOD(Redis, dsMGet)
 
 PHP_METHOD(Redis, dsMSet) {
     generic_mset(INTERNAL_FUNCTION_PARAM_PASSTHRU, "DS_MSET", redis_boolean_response);
+}
+
+PHP_METHOD(Redis, rlMSet) {
+    generic_mset(INTERNAL_FUNCTION_PARAM_PASSTHRU, "RL_MSET", redis_boolean_response);
 }
 
 
