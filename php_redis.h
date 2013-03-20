@@ -207,6 +207,8 @@ PHP_METHOD(Redis, dsHLen);
 PHP_METHOD(Redis, dsHVals);
 PHP_METHOD(Redis, dsHSetNx);
 PHP_METHOD(Redis, rlMSet);
+PHP_METHOD(Redis, rlGetSet);
+PHP_METHOD(Redis, rlHGetSet);
 
 
 
