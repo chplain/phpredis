@@ -6450,7 +6450,7 @@ PHP_METHOD(Redis, rlDel)
     RedisSock *redis_sock;
 
     if(FAILURE == generic_multiple_args_cmd(INTERNAL_FUNCTION_PARAM_PASSTHRU,
-                    "DS_DEL", sizeof("RL_DEL") - 1,
+                    "RL_DEL", sizeof("RL_DEL") - 1,
                     1, &redis_sock, 0, 1, 1))
         return;
 
