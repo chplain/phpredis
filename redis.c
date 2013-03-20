@@ -6439,7 +6439,7 @@ PHP_METHOD(Redis, dsDel)
         return;
 
     IF_ATOMIC() {
-      redis_boolean_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, NULL);
+      redis_long_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, NULL);
     }
     REDIS_PROCESS_RESPONSE(redis_boolean_response);
 
@@ -6455,7 +6455,7 @@ PHP_METHOD(Redis, rlDel)
         return;
 
     IF_ATOMIC() {
-      redis_boolean_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, NULL);
+      redis_long_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, NULL);
     }
     REDIS_PROCESS_RESPONSE(redis_boolean_response);
 
