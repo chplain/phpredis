@@ -181,6 +181,14 @@ PHP_METHOD(Redis, setOption);
 
 PHP_METHOD(Redis, config);
 
+PHP_METHOD(Redis, getHost);
+PHP_METHOD(Redis, getPort);
+PHP_METHOD(Redis, getDBNum);
+PHP_METHOD(Redis, getTimeout);
+PHP_METHOD(Redis, getReadTimeout);
+PHP_METHOD(Redis, isConnected);
+PHP_METHOD(Redis, getPersistentID);
+PHP_METHOD(Redis, getAuth);
 PHP_METHOD(Redis, dsGet);
 PHP_METHOD(Redis, dsMGet);
 PHP_METHOD(Redis, dsSet);
