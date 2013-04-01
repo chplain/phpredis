@@ -221,7 +221,8 @@ PHP_METHOD(Redis, rlHMget);
 PHP_METHOD(Redis, rlHMset);
 PHP_METHOD(Redis, setnex);
 PHP_METHOD(Redis, rlMGet);
-
+PHP_METHOD(Redis, rlMGetSet);
+PHP_METHOD(Redis, rlHMgetset);
 
 
 #ifdef PHP_WIN32
