@@ -1650,6 +1650,32 @@ class Redis_Test extends TestSuite
 	$this->assertTrue(FALSE === $this->redis->persist('x'));	// false if the key doesn’t exist.
     }
 
+    public function testClient() {
+        /* CLIENT SETNAME */
+        $this->assertTrue($this->redis->client('setname', 'phpredis_unit_tests'));
+
+        /* CLIENT LIST */
+        $arr_clients = $this->redis->client('list');
+        $this->assertTrue(is_array($arr_clients));
+
+        // Figure out which ip:port is us!
+        $str_addr = NULL;
+        foreach($arr_clients as $arr_client) {
+            if($arr_client['name'] == 'phpredis_unit_tests') {
+                $str_addr = $arr_client['addr'];
+            }
+        }
+
+        // We should have found our connection
+        $this->assertFalse(empty($str_addr));
+        
+        /* CLIENT GETNAME */
+        $this->assertTrue($this->redis->client('getname'), 'phpredis_unit_tests');
+         
+        /* CLIENT KILL -- phpredis will reconnect, so we can do this */
+        $this->assertTrue($this->redis->client('kill', $str_addr));
+    }
+
     public function testinfo() {
 	$info = $this->redis->info();
 
@@ -1948,10 +1974,32 @@ class Redis_Test extends TestSuite
 
 	$this->assertTrue($this->redis->zunion('key3', array('key1', 'key2'), array(2, 3.0)) === 3);
 
-
 	$this->redis->delete('key1');
 	$this->redis->delete('key2');
 	$this->redis->delete('key3');
+
+    // Test 'inf', '-inf', and '+inf' weights (GitHub issue #336)
+    $this->redis->zadd('key1', 1, 'one', 2, 'two', 3, 'three');
+    $this->redis->zadd('key2', 3, 'three', 4, 'four', 5, 'five');
+
+    // Make sure phpredis handles these weights
+    $this->assertTrue($this->redis->zunion('key3', array('key1','key2'), array(1, 'inf'))  === 5);
+    $this->assertTrue($this->redis->zunion('key3', array('key1','key2'), array(1, '-inf')) === 5);
+    $this->assertTrue($this->redis->zunion('key3', array('key1','key2'), array(1, '+inf')) === 5);
+
+    // Now, confirm that they're being sent, and that it works
+    $arr_weights = Array('inf','-inf','+inf');
+
+    foreach($arr_weights as $str_weight) {
+        $r = $this->redis->zunionstore('key3', array('key1','key2'), array(1,$str_weight));
+        $this->assertTrue($r===5);
+        $r = $this->redis->zrangebyscore('key3', '(-inf', '(inf',array('withscores'=>true));
+        $this->assertTrue(count($r)===2);
+        $this->assertTrue(isset($r['one']));
+        $this->assertTrue(isset($r['two']));
+    }
+
+    $this->redis->del('key1','key2','key3');
 
 	$this->redis->zadd('key1', 2000.1, 'one');
 	$this->redis->zadd('key1', 3000.1, 'two');

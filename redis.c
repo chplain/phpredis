@@ -16,6 +16,7 @@
   | Original author: Alfonso Jimenez <yo@alfonsojimenez.com>             |
   | Maintainer: Nicolas Favre-Felix <n.favre-felix@owlient.eu>           |
   | Maintainer: Nasreddine Bouafif <n.bouafif@owlient.eu>                |
+  | Maintainer: Michael Grunder <michael.grunder@gmail.com>              |
   +----------------------------------------------------------------------+
 */
 
@@ -227,6 +228,8 @@ static zend_function_entry redis_functions[] = {
      PHP_ME(Redis, _prefix, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, _unserialize, NULL, ZEND_ACC_PUBLIC)
 
+     PHP_ME(Redis, client, NULL, ZEND_ACC_PUBLIC)
+
      /* leveldb */
      PHP_ME(Redis, dsGet, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, dsMGet, NULL, ZEND_ACC_PUBLIC)
@@ -309,6 +312,9 @@ static zend_function_entry redis_functions[] = {
      PHP_MALIAS(Redis, srem, sRemove, NULL, ZEND_ACC_PUBLIC)
      PHP_MALIAS(Redis, sismember, sContains, NULL, ZEND_ACC_PUBLIC)
      PHP_MALIAS(Redis, zrevrange, zReverseRange, NULL, ZEND_ACC_PUBLIC)
+     
+     PHP_MALIAS(Redis, evaluate, eval, NULL, ZEND_ACC_PUBLIC)
+     PHP_MALIAS(Redis, evaluateSha, evalsha, NULL, ZEND_ACC_PUBLIC)
      {NULL, NULL, NULL}
 };
 
@@ -587,7 +593,7 @@ PHP_METHOD(Redis,__destruct) {
 	}
 }
 
-/* {{{ proto boolean Redis::connect(string host, int port [, double timeout])
+/* {{{ proto boolean Redis::connect(string host, int port [, double timeout [, long retry_interval]])
  */
 PHP_METHOD(Redis, connect)
 {
@@ -623,6 +629,7 @@ PHPAPI int redis_connect(INTERNAL_FUNCTION_PARAMETERS, int persistent) {
 	int host_len, id;
 	char *host = NULL;
 	long port = -1;
+	long retry_interval = 0;
 
 	char *persistent_id = NULL;
 	int persistent_id_len = -1;
@@ -635,14 +642,20 @@ PHPAPI int redis_connect(INTERNAL_FUNCTION_PARAMETERS, int persistent) {
     persistent = 0;
 #endif
 
-	if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Os|lds",
+	if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Os|ldsl",
 				&object, redis_ce, &host, &host_len, &port,
-				&timeout, &persistent_id, &persistent_id_len) == FAILURE) {
+				&timeout, &persistent_id, &persistent_id_len,
+				&retry_interval) == FAILURE) {
 		return FAILURE;
 	}
 
 	if (timeout < 0L || timeout > INT_MAX) {
 		zend_throw_exception(redis_exception_ce, "Invalid timeout", 0 TSRMLS_CC);
+		return FAILURE;
+	}
+
+	if (retry_interval < 0L || retry_interval > INT_MAX) {
+		zend_throw_exception(redis_exception_ce, "Invalid retry interval", 0 TSRMLS_CC);
 		return FAILURE;
 	}
 
@@ -662,7 +675,7 @@ PHPAPI int redis_connect(INTERNAL_FUNCTION_PARAMETERS, int persistent) {
 		zend_clear_exception(TSRMLS_C); /* clear exception triggered by non-existent socket during connect(). */
 	}
 
-	redis_sock = redis_sock_create(host, host_len, port, timeout, persistent, persistent_id);
+	redis_sock = redis_sock_create(host, host_len, port, timeout, persistent, persistent_id, retry_interval);
 
 	if (redis_sock_server_open(redis_sock, 1 TSRMLS_CC) < 0) {
 		redis_free_socket(redis_sock);
@@ -4418,9 +4431,15 @@ PHPAPI void generic_z_command(INTERNAL_FUNCTION_PARAMETERS, char *command, int c
 			zend_hash_get_current_data_ex(arr_weights_hash, (void**) &data, &pointer) == SUCCESS;
 			zend_hash_move_forward_ex(arr_weights_hash, &pointer)) {
 
-			if (Z_TYPE_PP(data) != IS_LONG && Z_TYPE_PP(data) != IS_DOUBLE) {
-				continue;	// ignore non-numeric arguments.
-			}
+            // Ignore non numeric arguments, unless they're the special Redis numbers
+            // "inf" ,"-inf", and "+inf" which can be passed as weights
+            if (Z_TYPE_PP(data) != IS_LONG && Z_TYPE_PP(data) != IS_DOUBLE &&
+                strncasecmp(Z_STRVAL_PP(data), "inf", sizeof("inf")) != 0 &&
+                strncasecmp(Z_STRVAL_PP(data), "-inf", sizeof("-inf")) != 0 &&
+                strncasecmp(Z_STRVAL_PP(data), "+inf", sizeof("+inf")) != 0)
+            {
+                continue;
+            }
 
 			old_cmd = NULL;
 			if(*cmd) {
@@ -4436,12 +4455,18 @@ PHPAPI void generic_z_command(INTERNAL_FUNCTION_PARAMETERS, char *command, int c
 						, integer_length(Z_LVAL_PP(data)), Z_LVAL_PP(data));
 
 			} else if(Z_TYPE_PP(data) == IS_DOUBLE) {
-
 				cmd_len = redis_cmd_format(&cmd,
                                 "%s" /* cmd */
                                 "$%f" _NL /* data, including size */
                                 , cmd, cmd_len
                                 , Z_DVAL_PP(data));
+			} else if(Z_TYPE_PP(data) == IS_STRING) {
+                cmd_len = redis_cmd_format(&cmd,
+                                "%s" /* cmd */
+                                "$%d" _NL /* data len */
+                                "%s" _NL /* data */
+                                , cmd, cmd_len, Z_STRLEN_PP(data),
+                                Z_STRVAL_PP(data), Z_STRLEN_PP(data));
 			}
 
 			// keep track of elements added
@@ -6489,7 +6514,59 @@ PHP_METHOD(Redis, getAuth) {
     }
 }
 
-/* vim: set tabstop=4 softtabstop=4 noexpandtab shiftwidth=4: */
+/*
+ * $redis->client('list');
+ * $redis->client('kill', <ip:port>);
+ * $redis->client('setname', <name>);
+ * $redis->client('getname');
+ */
+PHP_METHOD(Redis, client) {
+    zval *object;
+    RedisSock *redis_sock;
+    char *cmd, *opt=NULL, *arg=NULL;
+    int cmd_len, opt_len, arg_len;
+
+    // Parse our method parameters
+    if(zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Os|s", 
+        &object, redis_ce, &opt, &opt_len, &arg, &arg_len) == FAILURE) 
+    {
+        RETURN_FALSE;
+    }
+
+    // Grab our socket
+    if(redis_sock_get(object, &redis_sock TSRMLS_CC, 0) < 0) {
+        RETURN_FALSE;
+    }
+
+    // Build our CLIENT command
+    if(ZEND_NUM_ARGS() == 2) {
+        cmd_len = redis_cmd_format_static(&cmd, "CLIENT", "ss", opt, opt_len,
+                                          arg, arg_len); 
+    } else {
+        cmd_len = redis_cmd_format_static(&cmd, "CLIENT", "s", opt, opt_len);
+    }
+
+    // Handle CLIENT LIST specifically
+    int is_list = !strncasecmp(opt, "list", 4);
+
+    // Execute our queue command
+    REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
+
+    // We handle CLIENT LIST with a custom response function
+    if(!strncasecmp(opt, "list", 4)) {
+        IF_ATOMIC() {
+            redis_client_list_reply(INTERNAL_FUNCTION_PARAM_PASSTHRU,redis_sock,NULL);
+        }
+        REDIS_PROCESS_RESPONSE(redis_client_list_reply);
+    } else {
+        IF_ATOMIC() {
+            redis_read_variant_reply(INTERNAL_FUNCTION_PARAM_PASSTHRU,redis_sock,NULL);
+        }
+        REDIS_PROCESS_RESPONSE(redis_read_variant_reply);
+    }
+}
+
+/* vim: set tabstop=4 softtabstops=4 noexpandtab shiftwidth=4: */
 
 PHP_METHOD(Redis, dsGet)
 {
