@@ -38,14 +38,14 @@ class TestSuite {
 	}
 
 	public static function run($className) {
-
+        $runner = new TestRunner;
 		$rc = new ReflectionClass($className);
 		$methods = $rc->GetMethods(ReflectionMethod::IS_PUBLIC);
 
 		foreach($methods as $m) {
 
 			$name = $m->name;
-			if(substr($name, 0, 4) !== 'test')
+			if(!$runner->isValidTest($name))
 				continue;
 
 			$count = count($className::$errors);
@@ -76,4 +76,39 @@ class TestSuite {
 	}
 }
 
+class TestRunner
+{
+    private $filter;
+    
+    public function __construct()
+    {
+        $argv = $_SERVER['argv'];
+        foreach ( $argv as $i => $opt ) {
+            if ( $opt == '--filter' && isset($argv[$i+1]) ) {
+                $this->setFilter($argv[$i+1]);
+            }
+        }
+    }
+
+    public function getFilter()
+    {
+        return $this->filter;
+    }
+
+    public function setFilter($filter)
+    {
+        $this->filter = $filter;
+    }
+
+    public function isValidTest($name)
+    {
+        if ( substr($name, 0, 4) !== 'test' ) {
+            return false;
+        }
+        if ( isset($this->filter) ) {
+            return preg_match($this->filter, $name);
+        }
+        return true;
+    }
+}
 ?>

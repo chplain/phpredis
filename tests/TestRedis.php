@@ -19,6 +19,17 @@ class Redis_Test extends TestSuite
     {
 	$this->redis = $this->newInstance();
 	$info = $this->redis->info();
+    if ( isset($info['redis_version']) ) {
+        if ( strpos($info['redis_version'], ', ') !== false ) {
+            foreach ( explode(', ', $info['redis_version']) as $part ) {
+                $pair = explode(':', $part);
+                if ( count($pair) == 2 ) {
+                    $info[$pair[0].'_version'] = $pair[1];
+                }
+            } 
+        }
+        $this->leveldb_version = isset($info['leveldb_version']) ? $info['leveldb_version'] : '0.0.0';
+    }
 	$this->version = (isset($info['redis_version'])?$info['redis_version']:'0.0.0');
     }
 
@@ -4356,6 +4367,24 @@ class Redis_Test extends TestSuite
         $this->assertTrue($this->redis->getAuth() === self::AUTH);
     }
 
+    private function isLeveldbEnabled()
+    {
+        return isset($this->leveldb_version) && version_compare($this->leveldb_version, '1', 'ge');
+    }
+    
+    public function testDsIncrby()
+    {
+        if ( !$this->isLeveldbEnabled() ) {
+            $this->markTestSkipped();
+        }
+        $this->redis->dsDel('key');
+        $this->redis->dsIncrby('key', 1);
+        $this->assertEquals(1, (int)$this->redis->dsGet('key'));
+        $this->redis->dsIncrby('key', 2);
+        $this->assertEquals(3, (int)$this->redis->dsGet('key'));
+        $this->redis->dsIncrby('key', -1);
+        $this->assertEquals(2, (int)$this->redis->dsGet('key'));
+    }
 }
 
 exit(TestSuite::run("Redis_Test"));
