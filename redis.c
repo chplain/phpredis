@@ -6833,9 +6833,11 @@ PHP_METHOD(Redis, dsAppend)
 PHP_METHOD(Redis, dsIncrBy){
 
     zval *object;
-    char *key = NULL;
-    int key_len;
+    RedisSock *redis_sock;
+    char *key = NULL, *cmd;
+    int key_len, cmd_len;
     long val = 1;
+    int key_free;
 
     if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Osl",
                                      &object, redis_ce,
@@ -6843,7 +6845,17 @@ PHP_METHOD(Redis, dsIncrBy){
         RETURN_FALSE;
     }
 
-    redis_atomic_increment(INTERNAL_FUNCTION_PARAM_PASSTHRU, "DS_INCRBY", val);
+    if (redis_sock_get(object, &redis_sock TSRMLS_CC, 0) < 0) {
+        RETURN_FALSE;
+    }
+    key_free = redis_key_prefix(redis_sock, &key, &key_len TSRMLS_CC);
+    cmd_len = redis_cmd_format_static(&cmd, "DS_INCRBY", "sl", key, key_len, val);
+    if(key_free) efree(key);
+    REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
+    IF_ATOMIC() {
+        redis_long_response(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, NULL);
+    }
+    REDIS_PROCESS_RESPONSE(redis_long_response);
 }
 
 PHP_METHOD(Redis, dsHGet)
