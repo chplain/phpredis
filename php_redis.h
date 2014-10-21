@@ -73,6 +73,8 @@ PHP_METHOD(Redis, lRemove);
 PHP_METHOD(Redis, listTrim);
 PHP_METHOD(Redis, lGet);
 PHP_METHOD(Redis, lGetRange);
+PHP_METHOD(Redis, lAll);
+PHP_METHOD(Redis, rAll);
 PHP_METHOD(Redis, lSet);
 PHP_METHOD(Redis, lInsert);
 PHP_METHOD(Redis, sAdd);
