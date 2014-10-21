@@ -308,6 +308,8 @@ static zend_function_entry redis_functions[] = {
      PHP_MALIAS(Redis, ltrim, listTrim, NULL, ZEND_ACC_PUBLIC)
      PHP_MALIAS(Redis, lindex, lGet, NULL, ZEND_ACC_PUBLIC)
      PHP_MALIAS(Redis, lrange, lGetRange, NULL, ZEND_ACC_PUBLIC)
+     PHP_MALIAS(Redis, lall, lAll, NULL, ZEND_ACC_PUBLIC)
+     PHP_MALIAS(Redis, rall, rAll, NULL, ZEND_ACC_PUBLIC)
      PHP_MALIAS(Redis, scard, sSize, NULL, ZEND_ACC_PUBLIC)
      PHP_MALIAS(Redis, srem, sRemove, NULL, ZEND_ACC_PUBLIC)
      PHP_MALIAS(Redis, sismember, sContains, NULL, ZEND_ACC_PUBLIC)
@@ -2156,6 +2158,74 @@ PHP_METHOD(Redis, lGetRange)
 		redis_sock_read_multibulk_reply(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, NULL);
 	}
 	REDIS_PROCESS_RESPONSE(redis_sock_read_multibulk_reply);
+
+}
+/* }}} */
+
+/* {{{ proto array Redis::lAll(string key, int num)
+ */
+PHP_METHOD(Redis, lAll)
+{
+    zval *object;
+    RedisSock *redis_sock;
+    char *key = NULL, *cmd;
+    int key_len, cmd_len, key_free;
+    long num;
+
+    if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Osl",
+                                     &object, redis_ce,
+                                     &key, &key_len, &num) == FAILURE) {
+        RETURN_FALSE;
+    }
+
+    if (redis_sock_get(object, &redis_sock TSRMLS_CC, 0) < 0) {
+        RETURN_FALSE;
+    }
+
+    /* LALL key num */
+    key_free = redis_key_prefix(redis_sock, &key, &key_len TSRMLS_CC);
+    cmd_len = redis_cmd_format_static(&cmd, "LALL", "sd", key, key_len, num);
+    if(key_free) efree(key);
+
+    REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
+    IF_ATOMIC() {
+        redis_sock_read_multibulk_reply(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, NULL);
+    }
+    REDIS_PROCESS_RESPONSE(redis_sock_read_multibulk_reply);
+
+}
+/* }}} */
+
+/* {{{ proto array Redis::rAll(string key, int num)
+ */
+PHP_METHOD(Redis, rAll)
+{
+    zval *object;
+    RedisSock *redis_sock;
+    char *key = NULL, *cmd;
+    int key_len, cmd_len, key_free;
+    long num;
+
+    if (zend_parse_method_parameters(ZEND_NUM_ARGS() TSRMLS_CC, getThis(), "Osl",
+                                     &object, redis_ce,
+                                     &key, &key_len, &num) == FAILURE) {
+        RETURN_FALSE;
+    }
+
+    if (redis_sock_get(object, &redis_sock TSRMLS_CC, 0) < 0) {
+        RETURN_FALSE;
+    }
+
+    /* RALL key num */
+    key_free = redis_key_prefix(redis_sock, &key, &key_len TSRMLS_CC);
+    cmd_len = redis_cmd_format_static(&cmd, "RALL", "sd", key, key_len, num);
+    if(key_free) efree(key);
+
+    REDIS_PROCESS_REQUEST(redis_sock, cmd, cmd_len);
+    IF_ATOMIC() {
+        redis_sock_read_multibulk_reply(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock, NULL, NULL);
+    }
+    REDIS_PROCESS_RESPONSE(redis_sock_read_multibulk_reply);
 
 }
 /* }}} */

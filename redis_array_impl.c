@@ -109,6 +109,8 @@ void ra_init_function_table(RedisArray *ra) {
 	add_assoc_bool(ra->z_pure_cmds, "ZCARD", 1);
 	add_assoc_bool(ra->z_pure_cmds, "ZCOUNT", 1);
 	add_assoc_bool(ra->z_pure_cmds, "LRANGE", 1);
+	add_assoc_bool(ra->z_pure_cmds, "LALL", 1);
+	add_assoc_bool(ra->z_pure_cmds, "RALL", 1);
 	add_assoc_bool(ra->z_pure_cmds, "ZRANGE", 1);
 	add_assoc_bool(ra->z_pure_cmds, "ZRANK", 1);
 	add_assoc_bool(ra->z_pure_cmds, "GET", 1);
