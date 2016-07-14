@@ -611,6 +611,11 @@ PHP_METHOD(Redis, connect)
  */
 PHP_METHOD(Redis, pconnect)
 {
+        char inbuf[65536] = {0};
+        int max_clear_times = 2048; // read up to 128M *dirty* data after pconnect
+        int bytes_read = 0;
+        #define MAX_RETRY_FOR_EMPTY_READ 10
+        int max_retry_for_empty_read = MAX_RETRY_FOR_EMPTY_READ; // retry 10 times when read empty data (non-block mode)
 	if (redis_connect(INTERNAL_FUNCTION_PARAM_PASSTHRU, 1) == FAILURE) {
 		RETURN_FALSE;
 	} else {
@@ -619,7 +624,21 @@ PHP_METHOD(Redis, pconnect)
 		if (redis_sock_get(getThis(), &redis_sock TSRMLS_CC, 0) < 0) {
 			RETURN_FALSE;
 		}
-
+                
+                if(redis_sock->stream) {
+                        php_stream_set_option(redis_sock->stream, PHP_STREAM_OPTION_BLOCKING, 0, NULL); // set io to non-block
+                        while (--max_clear_times >= 0) { // clear dirty data(late arrived and queued)
+                            if(php_stream_gets(redis_sock->stream, inbuf, sizeof(inbuf) / sizeof(char)) == NULL) {
+                                if(--max_retry_for_empty_read < 0) {
+                                   break;
+                                }
+                                ++max_clear_times; // restore max_clear_times
+                                continue;
+                            }
+                            bytes_read += strlen(inbuf);
+                        }
+                        php_stream_set_option(redis_sock->stream, PHP_STREAM_OPTION_BLOCKING, 1, NULL);
+                    }
 		RETURN_TRUE;
 	}
 }
