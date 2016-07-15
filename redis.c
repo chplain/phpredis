@@ -626,19 +626,19 @@ PHP_METHOD(Redis, pconnect)
 		}
                 
                 if(redis_sock->stream) {
-                        php_stream_set_option(redis_sock->stream, PHP_STREAM_OPTION_BLOCKING, 0, NULL); // set io to non-block
-                        while (--max_clear_times >= 0) { // clear dirty data(late arrived and queued)
-                            if(php_stream_gets(redis_sock->stream, inbuf, sizeof(inbuf) / sizeof(char)) == NULL) {
-                                if(--max_retry_for_empty_read < 0) {
-                                   break;
-                                }
-                                ++max_clear_times; // restore max_clear_times
-                                continue;
+                    php_stream_set_option(redis_sock->stream, PHP_STREAM_OPTION_BLOCKING, 0, NULL); // set io to non-block
+                    while (--max_clear_times >= 0) { // clear dirty data(late arrived and queued)
+                        if(php_stream_gets(redis_sock->stream, inbuf, sizeof(inbuf) / sizeof(char)) == NULL) {
+                            if(--max_retry_for_empty_read < 0) {
+                               break;
                             }
-                            bytes_read += strlen(inbuf);
+                            ++max_clear_times; // restore max_clear_times
+                            continue;
                         }
-                        php_stream_set_option(redis_sock->stream, PHP_STREAM_OPTION_BLOCKING, 1, NULL);
+                        bytes_read += strlen(inbuf);
                     }
+                    php_stream_set_option(redis_sock->stream, PHP_STREAM_OPTION_BLOCKING, 1, NULL);
+                }
 		RETURN_TRUE;
 	}
 }
@@ -5209,7 +5209,7 @@ PHP_METHOD(Redis, multi)
         RETURN_FALSE;
 	}
 
-    redis_sock->current = NULL;
+//    redis_sock->current = NULL;
 
 	IF_MULTI() {
         cmd_len = redis_cmd_format_static(&cmd, "MULTI", "");
@@ -5226,6 +5226,7 @@ PHP_METHOD(Redis, multi)
 
         if(strncmp(response, "+OK", 3) == 0) {
             efree(response);
+                        free_reply_callbacks(object, redis_sock);
 			RETURN_ZVAL(getThis(), 1, 0);
 		}
         efree(response);
@@ -5253,6 +5254,7 @@ PHP_METHOD(Redis, discard)
     }
 
 	redis_sock->mode = ATOMIC;
+        free_reply_callbacks(getThis(), redis_sock);
 	redis_send_discard(INTERNAL_FUNCTION_PARAM_PASSTHRU, redis_sock);
 }
 
